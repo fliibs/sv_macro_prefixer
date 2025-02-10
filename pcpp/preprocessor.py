@@ -53,7 +53,9 @@ class FileInclusionTime(object):
 
 class Preprocessor(PreprocessorHooks):    
     def __init__(self,lexer=None):
+        
         super(Preprocessor, self).__init__()
+        self.ip_build_prefix = "E_"
         if lexer is None:
             lexer = default_lexer()
         self.lexer = lexer
@@ -87,6 +89,7 @@ class Preprocessor(PreprocessorHooks):
         self.linemacrodepth = 0
         self.countermacro = 0
         self.parser = None
+
 
     # -----------------------------------------------------------------------------
     # tokenize()
@@ -215,7 +218,8 @@ class Preprocessor(PreprocessorHooks):
         self.t_COMMENT = (self.t_COMMENT1, self.t_COMMENT2)
 
         # Check for other characters used by the preprocessor
-        chars = [ '<','>','#','##','\\','(',')',',','.']
+        # ip_builder
+        chars = [ '<','>','`','``','\\','(',')',',','.']
         for c in chars:
             self.lexer.input(c)
             tok = self.lexer.token()
@@ -397,7 +401,8 @@ class Preprocessor(PreprocessorHooks):
                 j = i - 1
                 while j >= 0 and macro.value[j].type in self.t_WS:
                     j -= 1
-                if j >= 0 and macro.value[j].value == '#':
+                # ip_builder
+                if j >= 0 and macro.value[j].value == '`':
                     macro.value[i] = copy.copy(macro.value[i])
                     macro.value[i].type = self.t_STRING
                     while i > j:
@@ -560,20 +565,37 @@ class Preprocessor(PreprocessorHooks):
                 tok.expanded_from = []
         i = 0
         #print("*** EXPAND MACROS in", "".join([t.value for t in tokens]), "expanding_from=", expanding_from)
-        #print(tokens)
         #print([(t.value, t.expanded_from) for t in tokens])
+        
         while i < len(tokens):
+            # ip_builder
+            if(i==0):
+                is_macro = False
+            elif tokens[i-1].value == '`':
+                is_macro = True
+            else:
+                is_macro = False
+                
             t = tokens[i]
             if self.linemacrodepth == 0:
                 self.linemacro = t.lineno
             self.linemacrodepth = self.linemacrodepth + 1
             if t.type == self.t_ID:
-                if t.value in self.macros and t.value not in t.expanded_from and t.value not in expanding_from:
+                #print(t.value)
+                #print(t)
+                if t.value in self.macros and t.value not in t.expanded_from and t.value not in expanding_from and is_macro:
+                    #print(t.value)
                     # Yes, we found a macro match
+                    #tokens.pop(i-1)
                     m = self.macros[t.value]
                     if m.arglist is None:
                         # A simple macro
                         rep = [copy.copy(_x) for _x in m.value]
+                        #print('============')
+                        #print(self.macros)
+                        #print(m)
+                        #print(m.value)
+                        #print(rep)
                         ex = self.expand_macros(rep, expanding_from + [t.value])
                         #print("\nExpanding macro", m, "\ninto", ex, "\nreplacing", tokens[i:i+1])
                         for e in ex:
@@ -582,7 +604,11 @@ class Preprocessor(PreprocessorHooks):
                             if not hasattr(e, 'expanded_from'):
                                 e.expanded_from = []
                             e.expanded_from.append(t.value)
+
+                        #print(ex)
                         tokens[i:i+1] = ex
+                        #print(tokens)
+                        #print(t.value)
                     else:
                         # A macro with arguments
                         j = i + 1
@@ -622,6 +648,7 @@ class Preprocessor(PreprocessorHooks):
                                         
                                 # Get macro replacement text
                                 rep = self.macro_expand_args(m,args)
+
                                 ex = self.expand_macros(rep, expanding_from + [t.value])
                                 for e in ex:
                                     e.source = t.source
@@ -641,6 +668,13 @@ class Preprocessor(PreprocessorHooks):
                                     ex.append(newtok)
                                 #print("\nExpanding macro", m, "\n\ninto", ex, "\n\nreplacing", tokens[i:j+tokcount])
                                 tokens[i:j+tokcount] = ex
+
+                                
+                                #print(m)
+                                #print(args)
+                                #print(rep)
+
+
                     self.linemacrodepth = self.linemacrodepth - 1
                     if self.linemacrodepth == 0:
                         self.linemacro = 0
@@ -652,11 +686,22 @@ class Preprocessor(PreprocessorHooks):
                     t.type = self.t_INTEGER
                     t.value = self.t_INTEGER_TYPE(self.countermacro)
                     self.countermacro += 1
+                # ip_builder
+                else:
+                    pass
+                    if is_macro and len(t.expanded_from)==0 and t.value not in expanding_from and \
+                        t.value not in ['define']:
+                        #print(t.expanded_from)
+                        #print(expanding_from)
+                        #print('unknown macro: %s' % tokens[i])
+                        tokens[i].value = self.ip_build_prefix +  tokens[i].value
                 
             i += 1
             self.linemacrodepth = self.linemacrodepth - 1
             if self.linemacrodepth == 0:
                 self.linemacro = 0
+
+            #print(tokens)
         return tokens
 
     # ----------------------------------------------------------------------    
@@ -837,7 +882,8 @@ class Preprocessor(PreprocessorHooks):
                     break
             output_and_expand_line = True
             output_unexpanded_line = False
-            if tok.value == '#':
+            # ip_builder
+            if tok.value == '`':
                 precedingtoks = [ tok ]
                 output_and_expand_line = False
                 try:
@@ -861,7 +907,14 @@ class Preprocessor(PreprocessorHooks):
                         name = ""
                         args = []
                         raise OutputDirective(Action.IgnoreAndRemove)
-                        
+
+                    #debug
+                    #print('===============')
+                    #print(name)
+                    #print(chunk)
+                    #print(x)
+                    #print(args)
+
                     if name == 'define':
                         at_front_of_file = False
                         if enable:
@@ -874,11 +927,28 @@ class Preprocessor(PreprocessorHooks):
                                     # If ifpassthru is only turned on due to this include guard, turn it off
                                     if ifpassthru and not ifstack[-1].ifpassthru:
                                         ifpassthru = False
+
+                        
+
+                            # ip_builder ==========
                             self.define(args)
+                            #print('define args')
+                            #print(args)
                             if self.debugout is not None:
                                 print("%d:%d:%d %s:%d      %s" % (enable, iftrigger, ifpassthru, dirtokens[0].source, dirtokens[0].lineno, repr(self.macros[args[0].value])), file = self.debugout)
                             if handling is None:
-                                for tok in x:
+                                # ip_builder ==========
+                                i = 0
+                                for idx, element in enumerate(x):
+                                    if element.value == 'define':
+                                        i = idx
+                                if x[i+2].value != "_PREFIX_":
+                                    x[i+2].value = self.ip_build_prefix + x[i+2].value
+                                #print('==============')
+                                #print(x)
+                                #print(self.expand_macros(x))
+                                #print(x)
+                                for tok in self.expand_macros(x):
                                     yield tok
                     elif name == 'include':
                         if enable:
@@ -922,6 +992,15 @@ class Preprocessor(PreprocessorHooks):
                                     iftrigger = False
                             else:
                                 iftrigger = True
+                        # ip_builder =======
+                        enable = True
+                        iftrigger = True
+                        for tok in self.expand_macros(chunk):
+                            yield tok
+                        chunk = []
+                        x[3].value = self.ip_build_prefix + x[3].value
+                        for tok in x:
+                            yield tok
                     elif name == 'ifndef':
                         if not ifstack and at_front_of_file:
                             self.on_potential_include_guard(args[0].value)
@@ -944,6 +1023,15 @@ class Preprocessor(PreprocessorHooks):
                                     iftrigger = False
                                 else:
                                     iftrigger = True
+                        # ip_builder =======
+                        enable = True
+                        iftrigger = True
+                        for tok in self.expand_macros(chunk):
+                            yield tok
+                        chunk = []
+                        x[3].value = self.ip_build_prefix + x[3].value
+                        for tok in x:
+                            yield tok
                     elif name == 'if':
                         if not ifstack and at_front_of_file:
                             if args[0].value == '!' and args[1].value == 'defined':
@@ -969,7 +1057,7 @@ class Preprocessor(PreprocessorHooks):
                                 enable = False
                             else:
                                 iftrigger = True
-                    elif name == 'elif':
+                    elif name == 'elsif':
                         at_front_of_file = False
                         if ifstack:
                             if ifstack[-1].enable:     # We only pay attention if outer "if" allows this
@@ -1004,7 +1092,15 @@ class Preprocessor(PreprocessorHooks):
                                         iftrigger = True
                         else:
                             self.on_error(dirtokens[0].source,dirtokens[0].lineno,"Misplaced #elif")
-                            
+                        # ip_builder =======
+                        enable = True
+                        iftrigger = True
+                        for tok in self.expand_macros(chunk):
+                            yield tok
+                        chunk = []
+                        x[3].value = self.ip_build_prefix + x[3].value
+                        for tok in x:
+                            yield tok
                     elif name == 'else':
                         at_front_of_file = False
                         if ifstack:
@@ -1019,7 +1115,15 @@ class Preprocessor(PreprocessorHooks):
                                     iftrigger = True
                         else:
                             self.on_error(dirtokens[0].source,dirtokens[0].lineno,"Misplaced #else")
-
+                        # ip_builder =======
+                        enable = True
+                        iftrigger = True
+                        for tok in self.expand_macros(chunk):
+                            yield tok
+                        chunk = []
+                        #x[3].value = self.ip_build_prefix + x[3].value
+                        for tok in x:
+                            yield tok
                     elif name == 'endif':
                         at_front_of_file = False
                         if ifstack:
@@ -1035,11 +1139,43 @@ class Preprocessor(PreprocessorHooks):
                                 raise OutputDirective(Action.IgnoreAndPassThrough)
                         else:
                             self.on_error(dirtokens[0].source,dirtokens[0].lineno,"Misplaced #endif")
+                        # ip_builder =======
+                        enable = True
+                        iftrigger = True
+                        for tok in x:
+                            yield tok
                     elif name == 'pragma' and args[0].value == 'once':
                         if enable:
                             self.include_once[self.source] = None
+                    elif name == '_PREFIX_':
+
+                        i = 0
+                        for idx, element in enumerate(x):
+                            if element.value == '_PREFIX_':
+                                i = idx
+                        x[i+2].value = self.ip_build_prefix + x[i+2].value
+                        for tok in x:
+                            yield tok
+                        #print(x)
+                        pass
                     elif enable:
-                        # Unknown preprocessor directive
+                        #print(name)
+                        #print(x)
+                        if name not in ['resetall',
+                                        'undefineall',
+                                        'timescale',
+                                        'default_nettype',
+                                        'unconnected_drive',
+                                        'nounconnected_drive',
+                                        'celldefine',
+                                        'endcelldefine',
+                                        'line',
+                                        'begin_keywords',
+                                        'end_keywords']:
+                            x[1].value = self.ip_build_prefix + x[1].value
+                        #for tok in x:
+                        #    yield tok                        
+                        # Unknown preprocessor direc(tive
                         output_unexpanded_line = (self.on_directive_unknown(dirtokens[0], args, ifpassthru, precedingtoks) is None)
 
                 except OutputDirective as e:
@@ -1188,6 +1324,8 @@ class Preprocessor(PreprocessorHooks):
         def add_macro(self, name, macro):
             macro.source = name.source
             macro.lineno = name.lineno
+            #print(name)
+            #print(macro)
             self.macros[name.value] = macro
 
         linetok = tokens
@@ -1197,15 +1335,29 @@ class Preprocessor(PreprocessorHooks):
                 mtype = linetok[1]
             else:
                 mtype = None
+
+            #print(mtype)
+
             if not mtype:
                 m = Macro(name.value,[])
+
+                res = self.tokenstrip(linetok[0:1])
+                res = copy.deepcopy(res)
+                res[0].value = self.ip_build_prefix + res[0].value
+                m = Macro(name.value,self.tokenstrip(res))
                 add_macro(self, name, m)
             elif mtype.type in self.t_WS:
                 # A normal macro
-                m = Macro(name.value,self.tokenstrip(linetok[2:]))
+                # ip builder
+                res = self.tokenstrip(linetok[0:1])
+                res = copy.deepcopy(res)
+                res[0].value = self.ip_build_prefix + res[0].value
+                m = Macro(name.value,self.tokenstrip(res))
                 add_macro(self, name, m)
             elif mtype.value == '(':
                 # A macro with arguments
+
+                #print(name)
                 tokcount, args, positions = self.collect_args(linetok[1:])
                 variadic = False
                 for a in args:
@@ -1234,20 +1386,40 @@ class Preprocessor(PreprocessorHooks):
                     if len(a) > 1 or a[0].type != self.t_ID:
                         self.on_error(a[0].source,a[0].lineno,"Invalid macro argument")
                         break
-                else:
-                    mvalue = self.tokenstrip(linetok[1+tokcount:])
-                    i = 0
-                    while i < len(mvalue):
-                        if i+1 < len(mvalue):
-                            if mvalue[i].type in self.t_WS and mvalue[i+1].value == '##':
-                                del mvalue[i]
-                                continue
-                            elif mvalue[i].value == '##' and mvalue[i+1].type in self.t_WS:
-                                del mvalue[i+1]
-                        i += 1
-                    m = Macro(name.value,mvalue,[x[0].value for x in args] if args != [[]] else [],variadic)
-                    self.macro_prescan(m)
-                    add_macro(self, name, m)
+                    else:
+                        mvalue = self.tokenstrip(linetok[1+tokcount:])
+                        #mvalue = self.tokenstrip(linetok[0:4])
+                        i = 0
+                        while i < len(mvalue):
+                            if i+1 < len(mvalue):
+                                if mvalue[i].type in self.t_WS and mvalue[i+1].value == '``':
+                                    del mvalue[i]
+                                    continue
+                                elif mvalue[i].value == '``' and mvalue[i+1].type in self.t_WS:
+                                    del mvalue[i+1]
+                            i += 1
+
+                        # ip_builder
+                        name_cp = copy.copy(linetok[0])
+                        name_cp.value = self.ip_build_prefix + name_cp.value
+                        #print('================================================')
+                        #print(name_cp)
+                        #print(linetok)
+                        #print([[x[0].value for x in args] if args != [[]] else []])
+                        #print(mvalue)
+
+                        #mvalue = self.tokenstrip(linetok[0:4])
+                        m = Macro(name.value,mvalue,[[x[0].value for x in args] if args != [[]] else []],variadic)
+
+                        #print(linetok[0])
+                        #print(m)
+                        #m.insert(0, name)
+                        
+                        #print('???')
+                        #print(m)
+                        #print(mvalue)
+                        self.macro_prescan(m)
+                        add_macro(self, name, m)
             else:
                 self.on_error(name.source,name.lineno,"Bad macro definition")
         #except LookupError:

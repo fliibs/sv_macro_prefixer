@@ -129,6 +129,8 @@ class CmdPreprocessor(Preprocessor):
             for d in self.args.includes:
                 self.add_path(d)
 
+    # ip_builder
+    def run(self):
         try:
             if len(self.args.inputs) == 1:
                 self.parse(self.args.inputs[0])
