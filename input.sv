@@ -69,6 +69,7 @@ something_`PARAM_MACRO_A(0)
 // prefix test
 `define _PREFIX_(name) name
 `_PREFIX_(a)
+module `_PREFIX_(qwer)
 
 `undef _PREFIX_
 

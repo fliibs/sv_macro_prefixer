@@ -585,8 +585,12 @@ class Preprocessor(PreprocessorHooks):
             self.linemacrodepth = self.linemacrodepth + 1
             if t.type == self.t_ID:
                 #print(t.value)
-                #print(t)
-                if t.value in self.macros and t.value not in t.expanded_from and t.value not in expanding_from and is_macro:
+                # find the macro which matches the token "_PREFIX"
+                #if t.value not in t.expanded_from and t.value not in expanding_from and is_macro and t.value == '_PREFIX_':
+                    #print(t)
+                #    tokens[i+2].value = "WER" + tokens[i+2].value
+
+                if t.value in self.macros and t.value not in t.expanded_from and t.value not in expanding_from and is_macro and t.value != '_PREFIX_':
                     #print(t.value)
                     # Yes, we found a macro match
                     #tokens.pop(i-1)
@@ -697,7 +701,11 @@ class Preprocessor(PreprocessorHooks):
                         #print(t.expanded_from)
                         #print(expanding_from)
                         #print('unknown macro: %s' % tokens[i])
-                        tokens[i].value = self.ip_build_prefix +  tokens[i].value
+                        if t.value == '_PREFIX_':
+
+                            tokens[i+2].value = self.ip_build_prefix +  tokens[i+2].value
+                        else:
+                            tokens[i].value = self.ip_build_prefix +  tokens[i].value
                 
             i += 1
             self.linemacrodepth = self.linemacrodepth - 1
