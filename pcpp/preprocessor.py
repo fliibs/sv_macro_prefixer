@@ -693,6 +693,13 @@ class Preprocessor(PreprocessorHooks):
                     t.type = self.t_INTEGER
                     t.value = self.t_INTEGER_TYPE(self.countermacro)
                     self.countermacro += 1
+                elif self.expand_countermacro and t.value == '_IGNORE_PREFIX_':
+                    # ip_prefix
+                    tokens[i+2].value = self.ip_build_prefix + tokens[i+2].value
+                    del tokens[i-1]
+                    del tokens[i-1]
+                    del tokens[i-1]
+                    del tokens[i]
                 # ip_builder
                 else:
                     pass
@@ -704,6 +711,15 @@ class Preprocessor(PreprocessorHooks):
                         if t.value == '_PREFIX_':
 
                             tokens[i+2].value = self.ip_build_prefix +  tokens[i+2].value
+                        # elif t.value == '_IGNORE_PREFIX_':
+                        #     print('33',tokens[i-2].value,'22')
+                        #     #print(tokens[i-1].value)
+                        #     #print(tokens[i].value)
+                        #     tokens[i-1].value = ''
+                        #     tokens[i].value = ''
+                        #     tokens[i+1].value = ''
+                        #     tokens[i+2].value = self.ip_build_prefix + tokens[i+2].value
+                        #     tokens[i+3].value = ''
                         else:
                             tokens[i].value = self.ip_build_prefix +  tokens[i].value
                 
