@@ -68,12 +68,12 @@ something_``DW_A + 1
 
 // prefix test
 `define _PREFIX_(name) name
-`_PREFIX_(DW_a)
-module `_PREFIX_(DW_qwer)
+DW_a
+module DW_qwer
 
 `undef _PREFIX_
 
-`_PREFIX_(DW_b)
+DW_b
 
 `DW___PREFIX_(qwer)
 

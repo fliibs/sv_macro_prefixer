@@ -60,8 +60,10 @@ class Preprocessor(PreprocessorHooks):
         super(Preprocessor, self).__init__()
         self.ip_build_prefix = "E_"
         self.ignore_prefix = True
+        
         if lexer is None:
             lexer = default_lexer()
+        
         self.lexer = lexer
         self.evaluator = Evaluator(self.lexer)
         self.macros = { }
@@ -184,9 +186,9 @@ class Preprocessor(PreprocessorHooks):
 
         self.t_WS = (self.t_SPACE, self.t_NEWLINE, self.t_LINECONT)
 
-        self.lexer.input("##")
+        self.lexer.input("``")
         tok = self.lexer.token()
-        if not tok or tok.value != "##":
+        if not tok or tok.value != "``":
             print("Couldn't determine token for token pasting operator")
         else:
             self.t_DPOUND = tok.type

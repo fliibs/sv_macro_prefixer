@@ -55,8 +55,8 @@ def t_CPP_LINECONT(t):
     return t
 _string_literal_linecont_pat = re.compile(r'\\[ \t]*\n')
 
-t_CPP_POUND = r'\#'
-t_CPP_DPOUND = r'\#\#'
+t_CPP_POUND = r'\`'
+t_CPP_DPOUND = r'\`\`'
 t_CPP_PLUS = r'\+'
 t_CPP_MINUS = r'-'
 t_CPP_STAR = r'\*'
