@@ -709,7 +709,6 @@ class Preprocessor(PreprocessorHooks):
                         #print(expanding_from)
                         #print('unknown macro: %s' % tokens[i])
                         if t.value == '_PREFIX_':
-
                             tokens[i+2].value = self.ip_build_prefix +  tokens[i+2].value
                         # elif t.value == '_IGNORE_PREFIX_':
                         #     print('33',tokens[i-2].value,'22')
@@ -721,6 +720,7 @@ class Preprocessor(PreprocessorHooks):
                         #     tokens[i+2].value = self.ip_build_prefix + tokens[i+2].value
                         #     tokens[i+3].value = ''
                         else:
+                            
                             tokens[i].value = self.ip_build_prefix +  tokens[i].value
                 
             i += 1
@@ -1175,16 +1175,16 @@ class Preprocessor(PreprocessorHooks):
                         if enable:
                             self.include_once[self.source] = None
                     elif name == '_PREFIX_':
-
                         i = 0
                         for idx, element in enumerate(x):
                             if element.value == '_PREFIX_':
                                 i = idx
                         x[i+2].value = self.ip_build_prefix + x[i+2].value
+                        for tok in self.expand_macros(chunk):
+                            yield tok
                         for tok in x:
                             yield tok
-                        #print(x)
-                        pass
+                        chunk = []
                     elif enable:
                         #print(name)
                         #print(x)
