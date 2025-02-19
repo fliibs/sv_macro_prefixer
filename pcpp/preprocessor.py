@@ -1191,7 +1191,10 @@ class Preprocessor(PreprocessorHooks):
                             yield tok
 
                         if self.ignore_prefix == True:
-                            x = [x[3],x[5]]
+                            del x[i-1]
+                            del x[i-1]
+                            del x[i-1]
+                            del x[i]
                         for tok in x:
                             yield tok
                         chunk = []
