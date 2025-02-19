@@ -59,6 +59,7 @@ class Preprocessor(PreprocessorHooks):
         
         super(Preprocessor, self).__init__()
         self.ip_build_prefix = "E_"
+        self.ignore_prefix = True
         if lexer is None:
             lexer = default_lexer()
         self.lexer = lexer
@@ -710,6 +711,12 @@ class Preprocessor(PreprocessorHooks):
                         #print('unknown macro: %s' % tokens[i])
                         if t.value == '_PREFIX_':
                             tokens[i+2].value = self.ip_build_prefix +  tokens[i+2].value
+                            if self.ignore_prefix == True:
+                                del tokens[i-1]
+                                del tokens[i-1]
+                                del tokens[i-1]
+                                del tokens[i]
+
                         # elif t.value == '_IGNORE_PREFIX_':
                         #     print('33',tokens[i-2].value,'22')
                         #     #print(tokens[i-1].value)
@@ -1182,6 +1189,9 @@ class Preprocessor(PreprocessorHooks):
                         x[i+2].value = self.ip_build_prefix + x[i+2].value
                         for tok in self.expand_macros(chunk):
                             yield tok
+
+                        if self.ignore_prefix == True:
+                            x = [x[3],x[5]]
                         for tok in x:
                             yield tok
                         chunk = []
