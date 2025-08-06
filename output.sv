@@ -78,8 +78,12 @@ DW_b
 `DW___PREFIX_(qwer)
 
 
+// expand macro test
+    `ifdef DW_EXPAND_MACRO_IFDEF_A
+    `endif
 
-
+    `ifndef DW_EXPAND_MACRO_IFNDEF_A
+    `endif
 
 // include test
 

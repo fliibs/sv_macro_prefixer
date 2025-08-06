@@ -78,8 +78,12 @@ module `_PREFIX_(qwer)
 `__PREFIX_(qwer)
 
 
+// expand macro test
+    `ifdef EXPAND_MACRO_IFDEF_A
+    `endif
 
-
+    `ifndef EXPAND_MACRO_IFNDEF_A
+    `endif
 
 // include test
 
