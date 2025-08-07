@@ -1101,11 +1101,12 @@ class Preprocessor(PreprocessorHooks):
                         # ip_builder =======
                         enable = True
                         iftrigger = True
-
                         for tok in self.expand_macros(chunk):
                             yield tok
                         chunk = []
-                        x[3].value = self.ip_build_prefix + x[3].value
+                        for i,element in enumerate(x):
+                            if element.value == 'if':
+                                x[i+2].value = self.ip_build_prefix + x[i+2].value
                         for tok in x:
                             yield tok
                     elif name == 'elsif':
@@ -1149,7 +1150,11 @@ class Preprocessor(PreprocessorHooks):
                         for tok in self.expand_macros(chunk):
                             yield tok
                         chunk = []
-                        x[3].value = self.ip_build_prefix + x[3].value
+                        print(x)
+                        for i,element in enumerate(x):
+                            if element.value == 'elsif':
+                                x[i+2].value = self.ip_build_prefix + x[i+2].value
+                                print(x[i+2])
                         for tok in x:
                             yield tok
                     elif name == 'else':
