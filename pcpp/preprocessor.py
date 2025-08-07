@@ -1097,6 +1097,17 @@ class Preprocessor(PreprocessorHooks):
                                 enable = False
                             else:
                                 iftrigger = True
+
+                        # ip_builder =======
+                        enable = True
+                        iftrigger = True
+
+                        for tok in self.expand_macros(chunk):
+                            yield tok
+                        chunk = []
+                        x[3].value = self.ip_build_prefix + x[3].value
+                        for tok in x:
+                            yield tok
                     elif name == 'elsif':
                         at_front_of_file = False
                         if ifstack:
@@ -1454,22 +1465,11 @@ class Preprocessor(PreprocessorHooks):
                         # ip_builder
                         name_cp = copy.copy(linetok[0])
                         name_cp.value = self.ip_build_prefix + name_cp.value
-                        #print('================================================')
-                        #print(name_cp)
-                        #print(linetok)
-                        #print([[x[0].value for x in args] if args != [[]] else []])
-                        #print(mvalue)
+
 
                         #mvalue = self.tokenstrip(linetok[0:4])
                         m = Macro(name.value,mvalue,[[x[0].value for x in args] if args != [[]] else []],variadic)
 
-                        #print(linetok[0])
-                        #print(m)
-                        #m.insert(0, name)
-                        
-                        #print('???')
-                        #print(m)
-                        #print(mvalue)
                         self.macro_prescan(m)
                         add_macro(self, name, m)
             else:
