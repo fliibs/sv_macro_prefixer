@@ -706,8 +706,28 @@ class Preprocessor(PreprocessorHooks):
                 # ip_builder
                 else:
                     pass
+                    _SV_DIRECTIVE_KEYWORDS = [
+                        'define', 'undef', 'ifdef', 'ifndef', 'if', 'elsif',
+                        'else', 'endif', 'include', 'timescale', 'resetall',
+                        'undefineall', 'default_nettype', 'unconnected_drive',
+                        'nounconnected_drive', 'celldefine', 'endcelldefine',
+                        'line', 'begin_keywords', 'end_keywords',
+                    ]
+                    # Directives that take exactly one macro-name argument.
+                    # When such a directive appears inside an expanded macro
+                    # body, its argument identifier still needs the prefix.
+                    _SINGLE_ID_ARG_DIRECTIVES = ['undef', 'ifdef', 'ifndef']
                     if is_macro and len(t.expanded_from)==0 and t.value not in expanding_from and \
-                        t.value not in ['define']:
+                        t.value in _SINGLE_ID_ARG_DIRECTIVES:
+                        for k in range(i + 1, len(tokens)):
+                            if tokens[k].type == self.t_ID:
+                                if tokens[k].value != '_PREFIX_':
+                                    tokens[k].value = self.ip_build_prefix + tokens[k].value
+                                break
+                            elif tokens[k].type not in self.t_WS:
+                                break
+                    elif is_macro and len(t.expanded_from)==0 and t.value not in expanding_from and \
+                        t.value not in _SV_DIRECTIVE_KEYWORDS:
                         #print(t.expanded_from)
                         #print(expanding_from)
                         #print('unknown macro: %s' % tokens[i])
@@ -718,16 +738,6 @@ class Preprocessor(PreprocessorHooks):
                                 del tokens[i-1]
                                 del tokens[i-1]
                                 del tokens[i]
-
-                        # elif t.value == '_IGNORE_PREFIX_':
-                        #     print('33',tokens[i-2].value,'22')
-                        #     #print(tokens[i-1].value)
-                        #     #print(tokens[i].value)
-                        #     tokens[i-1].value = ''
-                        #     tokens[i].value = ''
-                        #     tokens[i+1].value = ''
-                        #     tokens[i+2].value = self.ip_build_prefix + tokens[i+2].value
-                        #     tokens[i+3].value = ''
                         else:
                             
                             tokens[i].value = self.ip_build_prefix +  tokens[i].value
@@ -1008,6 +1018,11 @@ class Preprocessor(PreprocessorHooks):
                             chunk = []
                             self.undef(args)
                             if handling is None:
+                                # ip_builder ==========
+                                for i, element in enumerate(x):
+                                    if element.value == 'undef':
+                                        if x[i+2].value != "_PREFIX_":
+                                            x[i+2].value = self.ip_build_prefix + x[i+2].value
                                 for tok in x:
                                     yield tok
                     elif name == 'ifdef':
@@ -1106,7 +1121,10 @@ class Preprocessor(PreprocessorHooks):
                         chunk = []
                         for i,element in enumerate(x):
                             if element.value == 'if':
-                                x[i+2].value = self.ip_build_prefix + x[i+2].value
+                                for j in range(i+2, len(x)):
+                                    if x[j].type == self.t_ID and x[j].value not in ['defined']:
+                                        x[j].value = self.ip_build_prefix + x[j].value
+                                break
                         for tok in x:
                             yield tok
                     elif name == 'elsif':
@@ -1150,11 +1168,12 @@ class Preprocessor(PreprocessorHooks):
                         for tok in self.expand_macros(chunk):
                             yield tok
                         chunk = []
-                        print(x)
                         for i,element in enumerate(x):
                             if element.value == 'elsif':
-                                x[i+2].value = self.ip_build_prefix + x[i+2].value
-                                print(x[i+2])
+                                for j in range(i+2, len(x)):
+                                    if x[j].type == self.t_ID and x[j].value not in ['defined']:
+                                        x[j].value = self.ip_build_prefix + x[j].value
+                                break
                         for tok in x:
                             yield tok
                     elif name == 'else':

@@ -100,3 +100,23 @@ DW_b
 `line
 `begin_keywords
 `end_keywords
+
+
+// ===== bug repro: issue 新2 =====
+// `elsif with multiple identifiers — only the first one should get prefix
+// expected: `elsif DW_BUG2_COND_A || DW_BUG2_COND_B
+// actual:   `elsif DW_BUG2_COND_A || BUG2_COND_B   <-- BUG2_COND_B NOT prefixed
+`ifdef DW_BUG2_COND_A
+    `define DW_BUG2_IN_IF 1
+`elsif DW_BUG2_COND_A || DW_BUG2_COND_B
+    `define DW_BUG2_IN_ELSIF 2
+`endif
+
+
+// ===== bug repro: issue 新1 =====
+// macro body contains a directive keyword (`undef)
+// expected: `DW_undef DW_BUG1_TARGET  (or just pass through as-is)
+// actual:   `DW_DW_undef BUG1_TARGET  <-- 'undef' itself is prefixed, TARGET is not
+`define DW_BUG1_TARGET 99
+`define DW_BUG1_CLEANUP_MACRO `undef DW_BUG1_TARGET
+`DW_BUG1_CLEANUP_MACRO
