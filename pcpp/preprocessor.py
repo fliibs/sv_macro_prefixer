@@ -1051,7 +1051,8 @@ class Preprocessor(PreprocessorHooks):
                         chunk = []
                         for i,element in enumerate(x):
                             if element.value == 'ifdef':
-                                x[i+2].value = self.ip_build_prefix + x[i+2].value
+                                if x[i+2].value != "_PREFIX_":
+                                    x[i+2].value = self.ip_build_prefix + x[i+2].value
                         for tok in x:
                             yield tok
                     elif name == 'ifndef':
@@ -1084,7 +1085,8 @@ class Preprocessor(PreprocessorHooks):
                         chunk = []
                         for i,element in enumerate(x):
                             if element.value == 'ifndef':
-                                x[i+2].value = self.ip_build_prefix + x[i+2].value
+                                if x[i+2].value != "_PREFIX_":
+                                    x[i+2].value = self.ip_build_prefix + x[i+2].value
                         for tok in x:
                             yield tok
                     elif name == 'if':
